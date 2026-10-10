@@ -1,0 +1,2 @@
+// Include this in your Niri config. Leave this workspace out of your daily workflow.
+workspace "chatgpt-voice-hidden"
