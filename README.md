@@ -61,6 +61,20 @@ journalctl --user -u niri-chatgpt-workaround.service -n 20
 
 There can be a short delay before a newly created helper is parked. The watcher reacts to compositor events and also checks about every 0.6 seconds when idle. It only reads window metadata, workspace metadata, and output geometry; it does not capture your screen, inspect conversations, or make network requests.
 
+### Remember a position on the hidden workspace
+
+Optional `--position X Y` puts each newly parked helper at those output-local logical coordinates. It keeps the helper on the hidden workspace. The coordinates describe the whole transparent canvas, not the small visible controls. Get the current position from `niri msg --json windows`, under `layout.tile_pos_in_workspace_view`.
+
+Configure the service with `systemctl --user edit niri-chatgpt-workaround.service`:
+
+```ini
+[Service]
+ExecStart=
+ExecStart=%h/.local/bin/niri-chatgpt-park watch --position 600 -500
+```
+
+Replace the example coordinates with your own, then restart the service. Positioning happens after parking, rather than continuously overriding manual dragging. Niri can clamp out-of-bounds positions; an unverified position stops the watcher. Fixed coordinates may need adjusting after a monitor or scaling change. This does not enlarge the voice controls.
+
 ## Matching and limits
 
 The helper does not expose a unique app ID or title, so matching also uses its geometry: width between 400 and 1600 logical pixels, and height greater than both 1000 pixels and 1.5 times the tallest active output. The same process must have exactly one tiled ChatGPT main window. Other windows are left alone.

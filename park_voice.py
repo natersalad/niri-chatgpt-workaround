@@ -81,8 +81,9 @@ def runtime_dir():
 
 
 class Parker:
-    def __init__(self, workspace, ratio, dry_run=False):
+    def __init__(self, workspace, ratio, dry_run=False, position=None):
         self.workspace, self.ratio, self.dry_run = workspace, ratio, dry_run
+        self.position = position
         self.attempted = set()
         self.state_path = runtime_dir() / "parked.json"
         self.socket = os.environ.get("NIRI_SOCKET", "")
@@ -131,10 +132,33 @@ class Parker:
             target = next(w for w in check["workspaces"] if w.get("name") == self.workspace)
             if moved is not None and moved["workspace_id"] != target["id"]:
                 raise RuntimeError("Move did not verify; not retrying this window")
+            if moved is not None and self.position is not None:
+                self.position_helper(identity)
             self.attempted.discard(identity)
             print(f"Parked oversized ChatGPT helper {identity}", flush=True)
         if not self.dry_run:
             self.save()
+
+    def position_helper(self, identity):
+        state = snapshot()
+        target = next(w for w in state["workspaces"] if w.get("name") == self.workspace)
+        current = next((w for w in oversized_helpers(state, self.ratio)
+                        if w["id"] == identity and w["workspace_id"] == target["id"]), None)
+        if current is None:
+            return
+        before = current["layout"].get("tile_pos_in_workspace_view")
+        if not isinstance(before, list) or len(before) != 2:
+            raise RuntimeError("Cannot read helper position")
+        # Signed CLI values mean relative motion. Using deltas also avoids the
+        # working-area offset applied to absolute CLI positions.
+        delta = [wanted - actual for wanted, actual in zip(self.position, before)]
+        niri("action", "move-floating-window", "--id", str(identity),
+             "--x", f"{delta[0]:+.6f}", "--y", f"{delta[1]:+.6f}")
+        after = next((w for w in snapshot()["windows"] if w["id"] == identity), None)
+        if after is not None:
+            actual = after["layout"].get("tile_pos_in_workspace_view", [])
+            if len(actual) != 2 or any(abs(a - b) > 1 for a, b in zip(actual, self.position)):
+                raise RuntimeError("Niri clamped the requested position; not retrying")
 
     def restore(self):
         # Stop the service first, otherwise it will park the helper again.
@@ -188,9 +212,13 @@ def main():
     parser.add_argument("--workspace", default=PARKING_WORKSPACE)
     parser.add_argument("--height-ratio", type=float, default=1.5)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--position", nargs=2, type=float, metavar=("X", "Y"),
+                        help="Position newly parked helpers in output-local logical pixels")
     args = parser.parse_args()
     if not math.isfinite(args.height_ratio) or args.height_ratio <= 1:
         parser.error("--height-ratio must be finite and greater than 1")
+    if args.position is not None and not all(math.isfinite(v) for v in args.position):
+        parser.error("--position coordinates must be finite")
     if args.mode == "status":
         state = snapshot()
         print(json.dumps({"helpers": [w["id"] for w in oversized_helpers(state, args.height_ratio)],
@@ -201,7 +229,7 @@ def main():
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         raise RuntimeError("Another parker is running; stop the service before restore")
-    parker = Parker(args.workspace, args.height_ratio, args.dry_run)
+    parker = Parker(args.workspace, args.height_ratio, args.dry_run, args.position)
     if args.mode == "restore":
         if args.dry_run:
             parser.error("--dry-run is not supported with restore")

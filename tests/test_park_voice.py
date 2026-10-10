@@ -129,6 +129,29 @@ class ActionTests(unittest.TestCase):
             with self.assertRaises(RuntimeError): self.parker.restore()
             action.assert_not_called()
 
+    def test_position_uses_signed_deltas_for_negative_coordinates(self):
+        before = state(); before["windows"][1]["workspace_id"] = 2
+        before["windows"][1]["layout"]["tile_pos_in_workspace_view"] = [800, 38.4]
+        after = copy.deepcopy(before)
+        after["windows"][1]["layout"]["tile_pos_in_workspace_view"] = [624.8, -537.6]
+        self.parker.position = [624.8, -537.6]
+        with patch.object(module, "snapshot", side_effect=[before, after]), patch.object(module, "niri") as action:
+            self.parker.position_helper(20)
+            action.assert_called_once_with("action", "move-floating-window", "--id", "20",
+                                           "--x", "-175.200000", "--y", "-576.000000")
+
+    def test_position_never_moves_a_helper_on_main_workspace(self):
+        self.parker.position = [624.8, -537.6]
+        with patch.object(module, "snapshot", return_value=state()), patch.object(module, "niri") as action:
+            self.parker.position_helper(20); action.assert_not_called()
+
+    def test_clamped_position_is_reported(self):
+        parked = state(); parked["windows"][1]["workspace_id"] = 2
+        parked["windows"][1]["layout"]["tile_pos_in_workspace_view"] = [800, 38.4]
+        self.parker.position = [624.8, -537.6]
+        with patch.object(module, "snapshot", return_value=parked), patch.object(module, "niri"):
+            with self.assertRaises(RuntimeError): self.parker.position_helper(20)
+
 
 if __name__ == "__main__":
     unittest.main()
