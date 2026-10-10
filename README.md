@@ -130,6 +130,7 @@ Tests cover helper selection, ordinary dialogs, foreign processes, ambiguous mai
 
 ## Related reports
 
+- [Our Niri/native Wayland bug report to OpenAI](https://github.com/openai/codex/issues/52999) — includes this workaround and screenshots; submission does not imply maintainer acknowledgement or a planned fix.
 - [Linux floating voice widget blocks clicks](https://github.com/openai/codex/issues/50963)
 - [Oversized Linux floating window report](https://github.com/openai/codex/issues/48018)
 - [Hyprland input-region discussion](https://github.com/hyprwm/Hyprland/discussions/11834)
