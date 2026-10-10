@@ -8,7 +8,7 @@ This small Python watcher parks matching helper windows on a dedicated, inactive
 
 ## Status
 
-Developed on CachyOS with Niri 26.04 and the ChatGPT Linux preview running on native Wayland. Moving the helper away was confirmed to preserve voice and unblock clicks. The installed watcher has also parked a recreated helper during an active call. Further focus-switch testing is ongoing.
+Developed on CachyOS with Niri 26.04 and the ChatGPT Linux preview running on native Wayland. Moving the helper away was confirmed to preserve voice and unblock clicks. During an active call, the installed watcher automatically parked several newly recreated helpers, parked an existing helper returned to the main workspace, and kept the helper away through a focus-switch test. Login startup is configured but has not been tested through a new login.
 
 This code and its documentation were generated with OpenAI Codex and reviewed through automated tests and local runtime checks. It is an independent project, not an official OpenAI or Niri fix.
 
