@@ -1,10 +1,22 @@
-# Niri ChatGPT voice workaround
+# ChatGPT voice Niri workaround
 
 ChatGPT's native Wayland voice helper can create an oversized transparent window that blocks clicks on other apps. Moving it away once helps, but ChatGPT can recreate it on the current workspace.
 
 This small Python watcher parks matching helper windows on a dedicated, inactive Niri workspace. It watches for replacements and checks again when a helper moves back. It does not close the window, stop voice, modify ChatGPT, or change the app's Wayland launch settings.
 
 **The floating voice controls disappear with the helper.** Use the main ChatGPT window to control the call. This is a desktop workaround, not a fix for the app's input region.
+
+## Before and after
+
+Before: the floating voice helper creates a huge panel over the desktop. In this setup, compositor blur makes its normally transparent area visible.
+
+![Oversized voice helper covering the desktop](docs/screenshots/before-overlay.png)
+
+After: the helper is alive on another workspace, leaving the main desktop clear while the voice call continues.
+
+![Main desktop after the watcher parks the helper](docs/screenshots/after-parking.png)
+
+Screenshots show the actual desktop used for testing. A static image cannot demonstrate blocked clicks or continuing audio; those behaviors were checked separately. See [the investigation and remaining upstream work](docs/diagnosis.md) for the effects-only test, hidden-workspace view, reproduction steps, and what a real fix needs to address.
 
 ## Status
 
